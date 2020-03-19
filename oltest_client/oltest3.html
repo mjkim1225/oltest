@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>open layers with geoserver</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.4.3/proj4.js"></script>
+
+    <style>
+        .map {
+          height: 400px;
+          width: 100%;
+        }
+      </style>
+
+</head>
+<body>
+    <div id="map" class="map"></div>
+
+    <div id="info"></div>
+    <script>
+
+    proj4.defs([
+        ['EPSG:5179', "+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"]
+    ]);
+
+    var test;
+    var test2;
+    var choosenLayer;
+    var choosenSource;
+
+    var image = new ol.style.Circle({
+        radius: 5,
+        fill: null,
+        stroke: new ol.style.Stroke({color: 'red', width: 1})
+      });
+
+      var styles = {
+        'Point': new ol.style.Style({
+          image: image
+        }),
+        'LineString': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'green',
+            width: 1
+          })
+        }),
+        'MultiLineString': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'green',
+            width: 1
+          })
+        }),
+        'MultiPoint': new ol.style.Style({
+          image: image
+        }),
+        'MultiPolygon': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 1
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255, 0, 0, 0.1)'
+          })
+        }),
+        'Polygon': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'blue',
+            lineDash: [4],
+            width: 3
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(0, 0, 255, 0.1)'
+          })
+        }),
+        'GeometryCollection': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'magenta',
+            width: 2
+          }),
+          fill: new ol.style.Fill({
+            color: 'magenta'
+          }),
+          image: new ol.style.Circle({
+            radius: 10,
+            fill: null,
+            stroke: new ol.style.Stroke({
+              color: 'magenta'
+            })
+          })
+        }),
+        'Circle': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 2
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255,0,0,0.2)'
+          })
+        })
+      };
+
+    var view = new ol.View({
+        center: ol.proj.fromLonLat([126, 37]),
+        zoom: 6
+    });
+
+    var map = new ol.Map({
+    target: 'map',
+    layers: [
+        new ol.layer.Tile({
+        source: new ol.source.OSM()
+        })
+    ],
+    view: view
+    });
+
+    var guSource = new ol.source.TileWMS({
+        url: "http://localhost:8080/geoserver/ol_test/wms",
+        type: 'feature',
+        params: {'LAYERS': 'ol_test:do', 'STYLES':'yellow'},
+        serverType: 'geoserver'
+        });
+
+    var guLayer = new ol.layer.Tile({
+        source: guSource
+    });
+
+    var viewProjection = map.getView().getProjection();
+    var viewResolution = map.getView().getResolution();
+    
+
+    var container = document.getElementById('info');
+
+    var WKT = new ol.format.WKT();
+
+    map.on('click', function(evt) {
+        if(choosenLayer != undefined){
+            map.removeLayer(choosenLayer);
+        }
+        var coordinate = evt.coordinate;
+        console.log("coordinate : "+coordinate); 
+        var lon = coordinate[0];
+        var lat = coordinate[1];
+
+        coordinate = 'lon='+lon+'&'+'lat='+lat
+        console.log("coordinate query string : "+coordinate); 
+
+        $.ajax({
+        url : 'http://localhost:8088/oltest?'+coordinate,
+        type : 'GET'
+        }).done(function(data){
+
+            container.innerHTML = data.korName;
+
+            var feature = WKT.readFeature(data.geometry, {
+                            dataProjection: 'EPSG:5179',
+                            featureProjection: viewProjection
+            });
+
+
+            choosenSource = new ol.source.Vector({
+                features: [feature]                 //이게 []붙고 안붙고 차이가 뭘까..?
+            });
+
+
+            choosenLayer = new ol.layer.Vector({
+                source: choosenSource,
+                style: styles['MultiPolygon']
+            });
+
+            
+            map.addLayer(choosenLayer);
+
+
+        }).fail(function(error){
+            console.error(error);
+        })
+
+
+   });
+
+
+    map.addLayer(guLayer);
+    
+
+
+
+    </script>
+
+</body>
+</html>
+
+

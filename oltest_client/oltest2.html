@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>open layers with geoserver</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+
+    <style>
+        .map {
+          height: 400px;
+          width: 100%;
+        }
+      </style>
+
+</head>
+<body>
+    <div id="map" class="map"></div>
+
+    <div id="info"></div>
+    <script>
+
+    var test;
+    var test2;
+
+    var image = new ol.style.Circle({
+        radius: 5,
+        fill: null,
+        stroke: new ol.style.Stroke({color: 'red', width: 1})
+      });
+
+      var styles = {
+        'Point': new ol.style.Style({
+          image: image
+        }),
+        'LineString': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'green',
+            width: 1
+          })
+        }),
+        'MultiLineString': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'green',
+            width: 1
+          })
+        }),
+        'MultiPoint': new ol.style.Style({
+          image: image
+        }),
+        'MultiPolygon': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 1
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255, 0, 0, 0.1)'
+          })
+        }),
+        'Polygon': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'blue',
+            lineDash: [4],
+            width: 3
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(0, 0, 255, 0.1)'
+          })
+        }),
+        'GeometryCollection': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'magenta',
+            width: 2
+          }),
+          fill: new ol.style.Fill({
+            color: 'magenta'
+          }),
+          image: new ol.style.Circle({
+            radius: 10,
+            fill: null,
+            stroke: new ol.style.Stroke({
+              color: 'magenta'
+            })
+          })
+        }),
+        'Circle': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 2
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255,0,0,0.2)'
+          })
+        })
+      };
+
+
+    var view = new ol.View({
+        center: ol.proj.fromLonLat([126, 37]),
+        zoom: 6
+    });
+
+    var map = new ol.Map({
+    target: 'map',
+    layers: [
+        new ol.layer.Tile({
+        source: new ol.source.OSM()
+        })
+    ],
+    view: view
+    });
+
+    var guSource = new ol.source.TileWMS({
+        url: "http://localhost:8080/geoserver/ol_test/wms",
+        type: 'feature',
+        params: {'LAYERS': 'ol_test:do', 'STYLES':'yellow'},
+        serverType: 'geoserver'
+        });
+
+    var guLayer = new ol.layer.Tile({
+        source: guSource
+    });
+
+    var viewProjection = map.getView().getProjection();
+    var viewResolution = map.getView().getResolution();
+    
+
+    var container = document.getElementById('info');
+
+
+    var choosenLayer;
+    var choosenSource;
+
+    map.on('click', function(evt) {
+        if(choosenLayer != undefined){
+            map.removeLayer(choosenLayer);
+        }
+
+        var coordinate = evt.coordinate;
+        var pixel = map.getPixelFromCoordinate(coordinate);
+        map.forEachFeatureAtPixel(pixel, function(feature) {
+        });
+
+    var url = guSource.getGetFeatureInfoUrl(
+        evt.coordinate, viewResolution, viewProjection,
+        {'INFO_FORMAT': 'application/json', 'STYLES':'red'}
+        );
+
+    
+    if (url) {
+        console.log('url : '+url);
+        var parser = new ol.format.GeoJSON();
+        $.ajax({
+        url: url,
+        type: 'GET'
+
+        }).then(function(response) {
+            console.log('성공 : '+response);
+            test2 = response;
+            var result = parser.readFeatures(response);
+           
+            var featureId = result[0].c.slice(3);
+            var html = result[0].N.ctp_eng_nm
+            
+            container.innerHTML = html;
+
+            choosenSource = new ol.source.Vector({
+                features: result
+            });
+
+            choosenLayer = new ol.layer.Vector({
+                source: choosenSource,
+                style: styles[result[0].getGeometry().getType()]
+            });
+            
+            map.addLayer(choosenLayer);
+        
+        });
+       
+    }
+
+   });
+
+
+    map.addLayer(guLayer);
+    
+
+
+
+    </script>
+
+</body>
+</html>
+
+
+kdkdkkskkdkdkkfkfdsfmfkfk

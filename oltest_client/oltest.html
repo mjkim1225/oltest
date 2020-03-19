@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>open layers with geoserver</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+
+    <style>
+        .map {
+          height: 400px;
+          width: 100%;
+        }
+      </style>
+
+</head>
+<body>
+    <div id="map" class="map"></div>
+
+    <div id="info"></div>
+    <script>
+
+        var test;
+        var test2;
+ 
+    var view = new ol.View({
+        center: ol.proj.fromLonLat([126, 37]),
+        zoom: 6
+    });
+
+    var map = new ol.Map({
+    target: 'map',
+    layers: [
+        new ol.layer.Tile({
+        source: new ol.source.OSM()
+        })
+    ],
+    view: view
+    });
+
+    var guSource = new ol.source.TileWMS({
+        url: "http://localhost:8080/geoserver/ol_test/wms",
+        type: 'feature',
+        params: {'LAYERS': 'ol_test:do', 'STYLES':'yellow'},
+        serverType: 'geoserver'
+        });
+
+    var guLayer = new ol.layer.Tile({
+        source: guSource
+    });
+
+    var viewProjection = map.getView().getProjection();
+    var viewResolution = map.getView().getResolution();
+    
+
+    var container = document.getElementById('info');
+
+
+    var choosenLayer;
+    var choosenSource;
+
+    map.on('click', function(evt) {
+        console.log("ddd");
+        if(choosenLayer != undefined){
+            map.removeLayer(choosenLayer);
+        }
+
+        var coordinate = evt.coordinate;
+        var pixel = map.getPixelFromCoordinate(coordinate);
+        map.forEachFeatureAtPixel(pixel, function(feature) {
+        });
+
+    var url = guSource.getGetFeatureInfoUrl(
+        evt.coordinate, viewResolution, viewProjection,
+        {'INFO_FORMAT': 'application/json', 'STYLES':'red'}
+        );
+
+    
+    if (url) {
+        console.log('url : '+url);
+        var parser = new ol.format.GeoJSON();
+        $.ajax({
+        url: url,
+        type: 'GET'
+
+        }).then(function(response) {
+            console.log('성공 : '+response);
+            var result = parser.readFeatures(response);
+            var featureId = result[0].c.slice(3);
+            var html = result[0].N.ctp_eng_nm
+
+            container.innerHTML = html;
+
+        
+            choosenSource = new ol.source.TileWMS({
+                url: "http://localhost:8080/geoserver/ol_test/wms?service=WMS&version=1.1.0&request=GetMap&layers=ol_test%3Agu&bbox=746110.25%2C1458754.0%2C1387949.625%2C2068444.0&width=768&height=729&srs=EPSG%3A5179&format=image%2Fpng&featureid="+featureId,
+                type: 'feature',
+                params: {'LAYERS': 'ol_test:do','STYLES':'red'},
+                serverType: 'geoserver',
+                crossOrigin: 'anonymous'
+            });
+
+            choosenLayer = new ol.layer.Tile({
+                source: choosenSource
+            });
+
+            map.addLayer(choosenLayer);
+        
+        });
+       
+    }
+
+   });
+
+
+    map.addLayer(guLayer);
+    
+
+
+
+    </script>
+
+</body>
+</html>
+
+

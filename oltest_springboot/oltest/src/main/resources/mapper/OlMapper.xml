@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.oltest.repository.OlMapper">
+
+<!-- <select id="findPositionByPoint" parameterType="coor" resultType="emd">
+    /* selectEmd */
+        SELECT
+            sig_eng_nm AS engName,
+            sig_eng_nm AS korName,
+            ST_astext(geom) AS geometry
+        from sigungu2
+        WHERE ST_Contains(geom, ST_Transform(
+                ST_GeomFromText('POINT(#{lon} #{lat})', 3857)
+                , 5179));
+
+</select> -->
+
+<select id="findPositionByPoint" parameterType="String" resultType="emd">
+    /* selectEmd */
+        SELECT
+            sig_eng_nm AS engName,
+            sig_kor_nm AS korName,
+            ST_astext(geom) AS geometry
+        from sigungu2
+        WHERE ST_Contains(geom, ST_Transform(
+                ST_GeomFromText(#{point}, 3857)
+                , 5179));
+
+</select>
+
+</mapper>
