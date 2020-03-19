@@ -22,6 +22,8 @@ getMap - getFeatureInfo 의 총 2번의 요청
 
 
 
+# 그 외
+
 ### 필요한 설정
 * cors 문제를 해결하기 위해서 지오서버 관련 web.xml에 cors관련 주석을 해제해 주어야 한다.
 
