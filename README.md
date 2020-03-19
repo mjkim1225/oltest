@@ -22,7 +22,7 @@ getMap - getFeatureInfo 의 총 2번의 요청
 
 
 
-### 개발 할 떄 필요한 설정
+### 필요한 설정
 * cors 문제를 해결하기 위해서 지오서버 관련 web.xml에 cors관련 주석을 해제해 주어야 한다.
 
 * 또한 spring boot에서도 다른 클라이언트에서 요청을 보내기때문에 filter처리를 해줘야 하는데 처리를 한 부분은 spring boot폴더에서 filter>CorsFilter.java 이다.
