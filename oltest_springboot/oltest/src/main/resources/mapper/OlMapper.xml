@@ -2,19 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.oltest.repository.OlMapper">
 
-<!-- <select id="findPositionByPoint" parameterType="coor" resultType="emd">
-    /* selectEmd */
-        SELECT
-            sig_eng_nm AS engName,
-            sig_eng_nm AS korName,
-            ST_astext(geom) AS geometry
-        from sigungu2
-        WHERE ST_Contains(geom, ST_Transform(
-                ST_GeomFromText('POINT(#{lon} #{lat})', 3857)
-                , 5179));
-
-</select> -->
-
 <select id="findPositionByPoint" parameterType="String" resultType="emd">
     /* selectEmd */
         SELECT
@@ -23,9 +10,30 @@
             ST_astext(geom) AS geometry
         from sigungu2
         WHERE ST_Contains(geom, ST_Transform(
-                ST_GeomFromText(#{point}, 3857)
+                ST_GeomFromText(#{pointStr}, 3857)
                 , 5179));
 
+</select>
+
+<insert id="insertPoint" parameterType="String" >
+    /* insertPoint */
+        INSERT INTO
+        point ( name, geom)
+        VALUES( 'test' ,
+			  ST_Transform(
+              ST_GeomFromText(#{pointStr}, 3857)
+              , 5179)			  
+			  );
+</insert>
+
+<select id="findemdIncludingPoint" resultType="emd">
+    /* findemdIncludingPoint */
+        SELECT
+            si.sig_eng_nm AS engName,
+            si.sig_kor_nm AS korName,
+            ST_astext(si.geom) AS geometry
+        from sigungu2 AS si, point AS p
+        WHERE ST_Contains(si.geom, p.geom);
 </select>
 
 </mapper>

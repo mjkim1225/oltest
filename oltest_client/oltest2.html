@@ -118,8 +118,8 @@
         serverType: 'geoserver'
         });
 
-    var guLayer = new ol.layer.Tile({
-        source: guSource
+    var doLayer = new ol.layer.Tile({
+        source: doSource
     });
 
     var viewProjection = map.getView().getProjection();
@@ -142,7 +142,7 @@
         map.forEachFeatureAtPixel(pixel, function(feature) {
         });
 
-    var url = guSource.getGetFeatureInfoUrl(
+    var url = doSource.getGetFeatureInfoUrl(
         evt.coordinate, viewResolution, viewProjection,
         {'INFO_FORMAT': 'application/json', 'STYLES':'red'}
         );
@@ -183,7 +183,7 @@
    });
 
 
-    map.addLayer(guLayer);
+    map.addLayer(doLayer);
     
 
 

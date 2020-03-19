@@ -18,6 +18,11 @@ getMap - getFeatureInfo 의 총 2번의 요청
 전체레이어는 지오서버 클릭한 곳의 정보와 geom은 spring boot이용.
 
 
+# oltest3_1.html
+디비에 저장된 포인트 좌표와 그 좌표를 포함한 레이어가 
+브라우저를 열자마자 지도에 표시됨.
+
+
 
 # 그 외
 

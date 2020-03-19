@@ -39,15 +39,15 @@
     view: view
     });
 
-    var guSource = new ol.source.TileWMS({
+    var doSource = new ol.source.TileWMS({
         url: "http://localhost:8080/geoserver/ol_test/wms",
         type: 'feature',
         params: {'LAYERS': 'ol_test:do', 'STYLES':'yellow'},
         serverType: 'geoserver'
         });
 
-    var guLayer = new ol.layer.Tile({
-        source: guSource
+    var doLayer = new ol.layer.Tile({
+        source: doSource
     });
 
     var viewProjection = map.getView().getProjection();
@@ -71,7 +71,7 @@
         map.forEachFeatureAtPixel(pixel, function(feature) {
         });
 
-    var url = guSource.getGetFeatureInfoUrl(
+    var url = doSource.getGetFeatureInfoUrl(
         evt.coordinate, viewResolution, viewProjection,
         {'INFO_FORMAT': 'application/json', 'STYLES':'red'}
         );
@@ -114,7 +114,7 @@
    });
 
 
-    map.addLayer(guLayer);
+    map.addLayer(doLayer);
     
 
 

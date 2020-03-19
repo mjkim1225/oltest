@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>open layers with geoserver</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.4.3/proj4.js"></script>
+
+    <style>
+        .map {
+          height: 400px;
+          width: 100%;
+        }
+      </style>
+
+</head>
+<body>
+    <div id="map" class="map"></div>
+
+    <div id="info"></div>
+    <script>
+
+    proj4.defs([
+        ['EPSG:5179', "+proj=tmerc +lat_0=38 +lon_0=127.5 +k=0.9996 +x_0=1000000 +y_0=2000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"]
+    ]);
+
+    var test;
+    var test2;
+    var choosenLayer = [];
+    var choosenSource;
+
+    var image = new ol.style.Circle({
+        radius: 3,
+        fill: new ol.style.Fill({color: 'blue'}),
+        stroke: new ol.style.Stroke({color: 'white', width: 1})
+      });
+
+      var styles = {
+        'Point': new ol.style.Style({
+          image: image
+        }),
+        'LineString': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'green',
+            width: 1
+          })
+        }),
+        'MultiLineString': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'green',
+            width: 1
+          })
+        }),
+        'MultiPoint': new ol.style.Style({
+          image: image
+        }),
+        'MultiPolygon': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'black',
+            width: 1
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255, 0, 0, 0.4)'
+          })
+        }),
+        'Polygon': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'blue',
+            lineDash: [4],
+            width: 3
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(0, 0, 255, 0.1)'
+          })
+        }),
+        'GeometryCollection': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'magenta',
+            width: 2
+          }),
+          fill: new ol.style.Fill({
+            color: 'magenta'
+          }),
+          image: new ol.style.Circle({
+            radius: 10,
+            fill: null,
+            stroke: new ol.style.Stroke({
+              color: 'magenta'
+            })
+          })
+        }),
+        'Circle': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 2
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255,0,0,0.2)'
+          })
+        })
+      };
+
+    var view = new ol.View({
+        center: ol.proj.fromLonLat([126, 37]),
+        zoom: 6
+    });
+
+    var map = new ol.Map({
+    target: 'map',
+    layers: [
+        new ol.layer.Tile({
+        source: new ol.source.OSM()
+        })
+    ],
+    view: view
+    });
+
+    var doSource = new ol.source.TileWMS({
+        url: "http://localhost:8080/geoserver/ol_test/wms",
+        type: 'feature',
+        params: {'LAYERS': 'ol_test:do', 'STYLES':'yellow'},
+        serverType: 'geoserver'
+        });
+
+    var doLayer = new ol.layer.Tile({
+        source: doSource
+    });
+
+
+    var pointSource = new ol.source.TileWMS({
+        url: "http://localhost:8080/geoserver/ol_test/wms",
+        type: 'feature',
+        params: {'LAYERS': 'ol_test:point'},
+        serverType: 'geoserver'
+        });
+
+    var pointLayer = new ol.layer.Tile({
+        source: pointSource
+    });
+
+
+    //스프링 서버에 포인트가 포함된 레이어 시군구는 미리 가져와서 보여주는 건 어때?
+    
+
+    showSelectedLayer();
+
+    
+    map.addLayer(doLayer);
+    map.addLayer(pointLayer);
+
+
+    var viewProjection = map.getView().getProjection();
+    var viewResolution = map.getView().getResolution();
+    
+
+    var container = document.getElementById('info');
+
+    var WKT = new ol.format.WKT();
+
+    map.on('click', function(evt) {     //'pointermove'를 사용했으나 완벽히 원하는 기능을 수행하지 못해서 잠시 'click'으로 변경해 놓음  
+
+      if(choosenLayer != undefined){
+          for(var i=0; i<choosenLayer.length; i++){
+            map.removeLayer(choosenLayer[i]);
+          }
+            // map.removeLayer(choosenLayer);
+            // choosenLayer = [];
+      }
+        
+        var coordinate = evt.coordinate;
+        console.log("coordinate : "+coordinate); 
+        var lon = coordinate[0];
+        var lat = coordinate[1];
+
+        getEmd(lon, lat);
+
+   });
+
+   map.on('click', function(evt) {       
+      
+      var coordinate = evt.coordinate;
+      console.log("coordinate : "+coordinate); 
+      var lon = coordinate[0];
+      var lat = coordinate[1];
+
+      //포인트가 지도 레이어에 포함 관계인지 먼저 알아보고 맞으면 makePoint()를 하자.
+      checkPoint(lon, lat);
+
+    });                                                           
+
+
+
+
+
+
+   //function
+
+    function showSelectedLayer(){
+      console.log("ddd");
+      $.ajax({
+      url : 'http://localhost:8088/emd/show',
+      type : 'GET'
+      }).done(function(data){
+          console.log(data);
+          for(var i=0; i<data.length; i++){
+            var feature = WKT.readFeature(data[i].geometry, {      //readFeature는 단일 객체 readFeatures는 배열 객체를 리턴한다.
+                          dataProjection: 'EPSG:5179',
+                          featureProjection: viewProjection  //viewProjection대신에 'EPSG:3857'써도 실행됨
+            });
+
+            var source = new ol.source.Vector({
+                features: [feature]                 //이게 []붙고 안붙고 차이가 뭘까..?
+                                                    //features는 무조건 배열의 형태로 넣어야한다.
+            });
+
+            var layer = new ol.layer.Vector({
+                source: source,
+                style: new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                          color: 'black',
+                          width: 1
+                        }),
+                        fill: new ol.style.Fill({
+                          color: 'rgba(0, 0, 255, 0.4)'
+                        })
+                      })
+            });
+            
+            map.addLayer(layer);
+          }
+          
+
+
+      }).fail(function(error){
+          console.error(error);
+      })
+    }
+
+    function getEmd(lon, lat){
+      coordinate = 'lon='+lon+'&'+'lat='+lat
+      console.log("coordinate query string : "+coordinate); 
+
+      $.ajax({
+      url : 'http://localhost:8088/oltest?'+coordinate,
+      type : 'GET'
+      }).done(function(data){
+
+          container.innerHTML = data.korName;
+
+          var feature = WKT.readFeature(data.geometry, {      //readFeature는 단일 객체 readFeatures는 배열 객체를 리턴한다.
+                          dataProjection: 'EPSG:5179',
+                          featureProjection: viewProjection  //viewProjection대신에 'EPSG:3857'써도 실행됨
+          });
+
+          choosenSource = new ol.source.Vector({
+              features: [feature]                 //이게 []붙고 안붙고 차이가 뭘까..?
+                                                  //features는 무조건 배열의 형태로 넣어야한다.
+          });
+
+          var choosenLayerElement = new ol.layer.Vector({
+              source: choosenSource,
+              style: styles['MultiPolygon']
+          });
+
+          choosenLayer.push(choosenLayerElement);
+          
+          map.addLayer(choosenLayerElement);
+
+
+      }).fail(function(error){
+          console.error(error);
+      })
+    }
+
+    function checkPoint(lon, lat){
+      coordinate = 'lon='+lon+'&'+'lat='+lat
+      console.log("coordinate query string : "+coordinate); 
+
+      $.ajax({
+        url: 'http://localhost:8088/point/check?'+coordinate,
+        type: 'GET',
+        async: false
+
+        }).done(function(data){
+          makePoint(lon, lat);
+        }).fail(function(error){
+          alert("적절한 위치가 아닙니다.")
+          console.error(error);
+          
+      })
+    }
+
+    function makePoint(lon, lat){
+
+      $.ajax({
+        url: 'http://localhost:8088/point/add?'+coordinate,
+        type: 'GET',
+        async: false
+
+        }).done(function(data){
+          console.log("성공");
+        }).fail(function(error){
+          alert("적절한 위치가 아닙니다.")
+          console.error(error);
+          
+      })
+
+        var iconFeature = new ol.Feature({
+            geometry: new ol.geom.Point([lon, lat])
+            // ,name: '보이지 않는 꿈의 섬',
+            // population: 4000,
+            // rainfall: 500
+        });
+
+        iconFeature.setStyle(styles['Point']);
+
+        var iconSource = new ol.source.Vector({
+            features: [iconFeature]
+        });
+        
+        var iconLayer = new ol.layer.Vector({
+            source: iconSource
+        });
+
+        map.addLayer(iconLayer);
+
+    }
+    
+
+
+
+    </script>
+
+</body>
+</html>
+
+
