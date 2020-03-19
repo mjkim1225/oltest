@@ -13,13 +13,57 @@
           height: 400px;
           width: 100%;
         }
+        .ol-popup {
+        position: absolute;
+        background-color: white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #cccccc;
+        bottom: 12px;
+        left: -50px;
+        min-width: 150px;
+      }
+      .ol-popup:after, .ol-popup:before {
+        top: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+      .ol-popup:after {
+        border-top-color: white;
+        border-width: 10px;
+        left: 48px;
+        margin-left: -10px;
+      }
+      .ol-popup:before {
+        border-top-color: #cccccc;
+        border-width: 11px;
+        left: 48px;
+        margin-left: -11px;
+      }
+      .ol-popup-closer {
+        text-decoration: none;
+        position: absolute;
+        top: 2px;
+        right: 8px;
+      }
+      .ol-popup-closer:after {
+        content: "✖";
+      }
       </style>
 
 </head>
 <body>
     <div id="map" class="map"></div>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      <div id="popup-content"></div>
+    </div>
 
-    <div id="info"></div>
     <script>
 
     proj4.defs([
@@ -31,81 +75,106 @@
     var choosenLayer;
     var choosenSource;
 
-    var image = new ol.style.Circle({
-        radius: 5,
-        fill: null,
-        stroke: new ol.style.Stroke({color: 'red', width: 1})
-      });
+    //for popup
+    var container = document.getElementById('popup');
+    var content = document.getElementById('popup-content');
+    var closer = document.getElementById('popup-closer');
 
-      var styles = {
-        'Point': new ol.style.Style({
-          image: image
+
+    var image = new ol.style.Circle({
+      radius: 5,
+      fill: null,
+      stroke: new ol.style.Stroke({color: 'red', width: 1})
+    });
+
+    var styles = {
+      'Point': new ol.style.Style({
+        image: image
+      }),
+      'LineString': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'green',
+          width: 1
+        })
+      }),
+      'MultiLineString': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'green',
+          width: 1
+        })
+      }),
+      'MultiPoint': new ol.style.Style({
+        image: image
+      }),
+      'MultiPolygon': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'red',
+          width: 1
         }),
-        'LineString': new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(255, 0, 0, 0.1)'
+        })
+      }),
+      'Polygon': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'blue',
+          lineDash: [4],
+          width: 3
+        }),
+        fill: new ol.style.Fill({
+          color: 'rgba(0, 0, 255, 0.1)'
+        })
+      }),
+      'GeometryCollection': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'magenta',
+          width: 2
+        }),
+        fill: new ol.style.Fill({
+          color: 'magenta'
+        }),
+        image: new ol.style.Circle({
+          radius: 10,
+          fill: null,
           stroke: new ol.style.Stroke({
-            color: 'green',
-            width: 1
-          })
-        }),
-        'MultiLineString': new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'green',
-            width: 1
-          })
-        }),
-        'MultiPoint': new ol.style.Style({
-          image: image
-        }),
-        'MultiPolygon': new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'red',
-            width: 1
-          }),
-          fill: new ol.style.Fill({
-            color: 'rgba(255, 0, 0, 0.1)'
-          })
-        }),
-        'Polygon': new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'blue',
-            lineDash: [4],
-            width: 3
-          }),
-          fill: new ol.style.Fill({
-            color: 'rgba(0, 0, 255, 0.1)'
-          })
-        }),
-        'GeometryCollection': new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'magenta',
-            width: 2
-          }),
-          fill: new ol.style.Fill({
             color: 'magenta'
-          }),
-          image: new ol.style.Circle({
-            radius: 10,
-            fill: null,
-            stroke: new ol.style.Stroke({
-              color: 'magenta'
-            })
-          })
-        }),
-        'Circle': new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'red',
-            width: 2
-          }),
-          fill: new ol.style.Fill({
-            color: 'rgba(255,0,0,0.2)'
           })
         })
-      };
+      }),
+      'Circle': new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: 'red',
+          width: 2
+        }),
+        fill: new ol.style.Fill({
+          color: 'rgba(255,0,0,0.2)'
+        })
+      })
+    };
 
     var view = new ol.View({
         center: ol.proj.fromLonLat([126, 37]),
         zoom: 6
     });
+
+    //for popup
+    var overlay = new ol.Overlay({
+      element: container,
+      autoPan: true,
+      autoPanAnimation: {
+        duration: 250
+      }
+    });
+
+    function closePopup() {
+      overlay.setPosition(undefined);
+      closer.blur();
+      return false;
+    };
+
+    closer.onclick = closePopup;
+    
+
 
     var map = new ol.Map({
     target: 'map',
@@ -114,6 +183,7 @@
         source: new ol.source.OSM()
         })
     ],
+    overlays: [overlay],
     view: view
     });
 
@@ -132,14 +202,15 @@
     var viewResolution = map.getView().getResolution();
     
 
-    var container = document.getElementById('info');
 
     var WKT = new ol.format.WKT();
 
     map.on('click', function(evt) {
         if(choosenLayer != undefined){
             map.removeLayer(choosenLayer);
+            closePopup();
         }
+        
         var coordinate = evt.coordinate;
         console.log("coordinate : "+coordinate); 
         var lon = coordinate[0];
@@ -153,31 +224,33 @@
         type : 'GET'
         }).done(function(data){
 
-            container.innerHTML = data.korName;
-
-            var feature = WKT.readFeature(data.geometry, {      //readFeature는 단일 객체 readFeatures는 배열 객체를 리턴한다.
-                            dataProjection: 'EPSG:5179',
-                            featureProjection: viewProjection  //viewProjection대신에 'EPSG:3857'써도 실행됨
-            });
+          var feature = WKT.readFeature(data.geometry, {      //readFeature는 단일 객체 readFeatures는 배열 객체를 리턴한다.
+                          dataProjection: 'EPSG:5179',
+                          featureProjection: viewProjection  //viewProjection대신에 'EPSG:3857'써도 실행됨
+          });
 
 
-            choosenSource = new ol.source.Vector({
-                features: [feature]                 //이게 []붙고 안붙고 차이가 뭘까..?
-                                                    //features는 무조건 배열의 형태로 넣어야한다.
-            });
+          choosenSource = new ol.source.Vector({
+              features: [feature]                 //이게 []붙고 안붙고 차이가 뭘까..?
+                                                  //features는 무조건 배열의 형태로 넣어야한다.
+          });
 
 
-            choosenLayer = new ol.layer.Vector({
-                source: choosenSource,
-                style: styles['MultiPolygon']
-            });
+          choosenLayer = new ol.layer.Vector({
+              source: choosenSource,
+              style: styles['MultiPolygon']
+          });
 
-            
-            map.addLayer(choosenLayer);
+          
+          map.addLayer(choosenLayer);
+
+          //popup
+          content.innerHTML = data.korName+'<hr>'+data.engName;
+          overlay.setPosition(evt.coordinate);
 
 
         }).fail(function(error){
-            console.error(error);
+          console.error(error);
         })
 
 
