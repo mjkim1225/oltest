@@ -1,11 +1,8 @@
 
-
-
 # oltest.html
 getMap - getFeatureInfo - getMap 의 총 3번의 요청
 (전체레이어 - 클릭한 곳의 정보 - 클릭한 곳의 레이어)
 모두 지오서버 이용.
-
 
 
 # oltest2.html

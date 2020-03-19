@@ -157,7 +157,7 @@
 
             var feature = WKT.readFeature(data.geometry, {
                             dataProjection: 'EPSG:5179',
-                            featureProjection: viewProjection
+                            featureProjection: viewProjection  //viewProjection대신에 'EPSG:3857'써도 실행됨
             });
 
 
