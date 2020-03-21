@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.js"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>    
+
+<style>
+    #map {
+        width: 100%;
+        height: 500px;
+    }
+</style>
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+<script>
+
+    $(function(){
+        console.log('dom 생성');
+           
+        var vectorSource = new ol.source.Vector();
+        var vectorLayer = new ol.layer.Vector({
+            source: vectorSource 
+        });
+
+        var map = new ol.Map({
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            }),
+            vectorLayer //layers 키 값으로 osm레이어와 앞서 만든 벡터 레이어를 지정
+        ],
+        
+        target: 'map',
+        
+        controls: ol.control.defaults({
+            attributionOptions: ({
+                collapsible: false
+            })
+        }),
+    
+        view: new ol.View({
+            center: ol.proj.fromLonLat([126, 37]),
+            zoom: 5
+        })
+
+        });    
+        
+        addImagePoint(vectorSource);
+        addTextPoint(vectorSource);
+        addPolyline(vectorSource);
+        addPolygon(vectorSource);
+
+        map.on('singleclick', function (evt) {
+            var feature = map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+                return feature;
+            });
+        
+            if (feature) {
+                alert(feature.get('name'));
+            }
+        });                                                         
+    });
+
+
+function addImagePoint(/* ol.source.Vector */ src) {
+    var feature = new ol.Feature(
+        {
+            geometry: new ol.geom.Point([14827315, 4785815])
+        }
+    );
+ 
+    var style = new ol.style.Style({
+        image: new ol.style.Circle({
+            radius: 5,
+            fill: new ol.style.Fill({color:'white'}),
+            stroke: new ol.style.Stroke({color: 'red', width: 1})
+        })
+    });
+ 
+    feature.setStyle(style);
+    feature.set('name', '이미지 포인트 Feature');
+ 
+    src.addFeature(feature);
+}
+
+function addPolygon(/* ol.source.Vector */ src) {
+    var feature = new ol.Feature({
+        geometry: new ol.geom.Polygon(
+            [
+                [
+                    [13768449, 4871327],
+                    [14556056, 5287144],
+                    [14445986, 4166883],
+                    [13995925, 3861135],
+                    [13768449, 4871327],
+                ]
+            ]
+        )
+    });
+ 
+    var style = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'blue',
+            width: 3
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(0,0,255,0.6)'
+        })
+    });
+ 
+    feature.setStyle(style);
+    feature.set('name', '폴리곤 Feature');
+ 
+    src.addFeature(feature);
+}
+ 
+function addPolyline(/* ol.source.Vector */ src) {
+    var feature = new ol.Feature({
+        geometry: new ol.geom.LineString([
+            [16030985, 5565986],
+            [15480638, 4318534],
+            [14384837, 3780417],                            
+        ])
+    });
+ 
+    var style = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 4
+        })
+    });
+ 
+    feature.setStyle(style);
+    feature.set('name', '폴리라인 Feature');
+ 
+    src.addFeature(feature);
+}
+ 
+function addTextPoint(/* ol.source.Vector */ src) {
+    var feature = new ol.Feature({
+        geometry: new ol.geom.Point([13778283, 4331832])
+    });
+ 
+    var style = new ol.style.Style({
+        text: new ol.style.Text({
+            text: "ol3",
+            scale: 2,
+            offsetY: 0,
+            stroke: new ol.style.Stroke({
+                color: 'black',
+                width: 1
+            }),
+            fill: new ol.style.Fill({
+                color: 'yellow'
+            })
+        })
+    });
+ 
+    feature.setStyle(style);
+    feature.set('name', '텍스트 포인트 Feature');
+ 
+    src.addFeature(feature);
+
+}
+
+
+
+</script>
+
+</html>

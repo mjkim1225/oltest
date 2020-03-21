@@ -25,6 +25,9 @@ getMap - getFeatureInfo 의 총 2번의 요청
 # oltest4.html
 지도에서 클릭한 좌표를 포함한 시군구 정보를 popup으로 보여줌
 
+# oltest5.html
+open layers의 가장 기초적인 point line polygon text를 지도에 표현
+
 
 
 # 그 외
